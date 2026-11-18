@@ -56,10 +56,17 @@ def track():
     if not data:
         return jsonify({'error': 'Données manquantes'}), 400
     
+    # Récupérer la VRAIE adresse IP derrière le proxy de Render
+    if request.headers.getlist("X-Forwarded-For"):
+        real_ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+    else:
+        real_ip = request.remote_addr
+    
     new_visit = Visit(
-        ip_address=request.remote_addr,
-        action=data.get('action', 'pageview'),
-        user_agent=data.get('userAgent', '')
+        ip_address=real_ip,
+        # On garde l'action et on s'assure qu'elle ne dépasse pas les 50 caractères de la BDD
+        action=data.get('action', 'pageview')[:50],
+        user_agent=data.get('userAgent', '')[:500]
     )
     db.session.add(new_visit)
     db.session.commit()
@@ -70,46 +77,77 @@ def track():
 @app.route('/admin')
 @requires_auth
 def admin():
-    # Récupérer les 100 dernières actions
-    visits = Visit.query.order_by(Visit.timestamp.desc()).limit(100).all()
+    # Récupérer les 200 dernières actions
+    visits = Visit.query.order_by(Visit.timestamp.desc()).limit(200).all()
     
-    # Template HTML minimaliste intégré pour éviter d'avoir un dossier templates/
+    # Logique Python : Regrouper les visites par adresse IP
+    grouped_visits = {}
+    for v in visits:
+        if v.ip_address not in grouped_visits:
+            grouped_visits[v.ip_address] = {
+                'actions': [],
+                'user_agent': v.user_agent # On garde l'info du navigateur
+            }
+        grouped_visits[v.ip_address]['actions'].append(v)
+    
+    # Template HTML mis à jour (100% Responsive Mobile)
     html = """
     <!DOCTYPE html>
     <html lang="fr">
     <head>
         <meta charset="UTF-8">
+        <!-- Balise indispensable pour le responsive mobile -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Dashboard Admin | Portfolio</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
-    <body class="bg-dark text-light p-5">
-        <div class="container">
-            <h2 class="text-success mb-4">Statistiques du Portfolio</h2>
-            <table class="table table-dark table-striped">
-                <thead>
-                    <tr>
-                        <th>Date & Heure (UTC)</th>
-                        <th>Action</th>
-                        <th>IP</th>
-                        <th>Navigateur / OS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for v in visits %}
-                    <tr>
-                        <td>{{ v.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td><span class="badge {% if v.action == 'cv_download' %}bg-warning{% else %}bg-success{% endif %}">{{ v.action }}</span></td>
-                        <td>{{ v.ip_address }}</td>
-                        <td class="small text-white-50">{{ v.user_agent[:60] }}...</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <body class="bg-dark text-light p-2 p-md-4">
+        <div class="container-fluid container-md">
+            <h2 class="text-success mb-4 fs-3 fs-md-2">Parcours des Visiteurs</h2>
+            
+            {% for ip, data in grouped_visits.items() %}
+            <div class="card bg-black border-secondary mb-4 shadow-sm">
+                <!-- En-tête de la carte (s'adapte si l'IP est longue) -->
+                <div class="card-header border-secondary d-flex flex-wrap justify-content-between align-items-center bg-dark gap-2">
+                    <span class="text-warning fw-bold text-break">🌍 IP : {{ ip }}</span>
+                    <span class="badge bg-secondary">{{ data.actions|length }} événements</span>
+                </div>
+                
+                <div class="card-body py-3">
+                    <!-- Info navigateur avec text-break pour éviter de casser l'écran -->
+                    <p class="small text-white-50 mb-3 border-bottom border-secondary pb-2 text-break">
+                        💻 {{ data.user_agent[:100] }}...
+                    </p>
+                    
+                    <!-- Liste des actions en Flexbox (remplace le tableau) -->
+                    <div class="d-flex flex-column gap-2">
+                        {% for v in data.actions %}
+                        <div class="d-flex flex-column flex-sm-row justify-content-start align-items-sm-center gap-1 gap-sm-3">
+                            <span class="text-muted small" style="min-width: 170px;">
+                                {{ v.timestamp.strftime('%H:%M:%S (%Y-%m-%d)') }}
+                            </span>
+                            <span>
+                                <span class="badge 
+                                    {% if v.action == 'cv_download' %}bg-warning text-dark
+                                    {% elif 'lu_' in v.action %}bg-info text-dark
+                                    {% elif 'tps_' in v.action %}bg-secondary
+                                    {% else %}bg-success{% endif %}">
+                                    {{ v.action }}
+                                </span>
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                </div>
+            </div>
+            {% endfor %}
+            
         </div>
     </body>
     </html>
     """
-    return render_template_string(html, visits=visits)
-
+    return render_template_string(html, grouped_visits=grouped_visits)
+    
 if __name__ == '__main__':
     app.run(debug=True)
