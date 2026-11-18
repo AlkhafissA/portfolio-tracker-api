@@ -11,7 +11,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "https://alkhafissa.github.io"}})
 
 # 2. Configuration de la base de données SQLite
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tracker.db'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tracker.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///tracker.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
