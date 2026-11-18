@@ -100,7 +100,7 @@ def admin():
                         <td>{{ v.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td><span class="badge {% if v.action == 'cv_download' %}bg-warning{% else %}bg-success{% endif %}">{{ v.action }}</span></td>
                         <td>{{ v.ip_address }}</td>
-                        <td class="small text-muted">{{ v.user_agent[:60] }}...</td>
+                        <td class="small text-white-50">{{ v.user_agent[:60] }}...</td>
                     </tr>
                     {% endfor %}
                 </tbody>
