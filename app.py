@@ -5,7 +5,13 @@ from datetime import datetime
 import os
 from functools import wraps
 
+
 app = Flask(__name__)
+
+@app.route('/')
+@app.route('/ping')
+def health_check():
+    return "OK", 200
 
 # 1. Autorise uniquement le portfolio GitHub Pages à envoyer des requêtes
 CORS(app, resources={r"/api/*": {"origins": "https://alkhafissa.github.io"}})
