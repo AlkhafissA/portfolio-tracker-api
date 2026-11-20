@@ -94,7 +94,7 @@ def admin():
             }
         grouped_visits[v.ip_address]['actions'].append(v)
     
-    # Template HTML (Dashboard 2-panes, Sidebar/Hamburger, JS Toggle)
+    # Template HTML (Dashboard 2-panes, Custom Scrollbar, Date et Compteur visibles)
     html = """
     <!DOCTYPE html>
     <html lang="fr">
@@ -122,6 +122,26 @@ def admin():
                 -webkit-font-smoothing: antialiased;
                 overflow-x: hidden;
             }
+
+            /* --- STYLISATION DE LA BARRE DE DÉFILEMENT --- */
+            ::-webkit-scrollbar {
+                width: 6px;
+            }
+            ::-webkit-scrollbar-track {
+                background: var(--bg-main); 
+            }
+            ::-webkit-scrollbar-thumb {
+                background: #475569; 
+                border-radius: 10px;
+            }
+            ::-webkit-scrollbar-thumb:hover {
+                background: #64748b; 
+            }
+            * {
+                scrollbar-width: thin;
+                scrollbar-color: #475569 var(--bg-main);
+            }
+            /* --------------------------------------------- */
             
             /* Sidebar Styles */
             .sidebar {
@@ -226,12 +246,17 @@ def admin():
             .timeline-item.type-page .timeline-icon { border-color: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); }
             .timeline-item.type-click .timeline-icon { border-color: #fb7185; box-shadow: 0 0 8px rgba(251, 113, 133, 0.4); }
 
-            /* J'ai élargi la largeur minimale ici pour accueillir la date + l'heure */
             .time-label {
                 font-size: 0.85rem;
                 color: var(--text-muted);
                 min-width: 135px; 
                 font-variant-numeric: tabular-nums;
+            }
+
+            .date-label {
+                color: #64748b; 
+                font-size: 0.75rem;
+                margin-left: 8px;
             }
 
             .badge-custom {
@@ -261,16 +286,19 @@ def admin():
         </div>
 
         <div class="d-flex">
-            <!-- Sidebar (Offcanvas sur mobile, Fixe sur desktop) -->
-            <div class="offcanvas-md offcanvas-start sidebar" tabindex="-1" id="sidebarMenu" style="width: 280px;">
+            <!-- Sidebar -->
+            <div class="offcanvas-md offcanvas-start sidebar" tabindex="-1" id="sidebarMenu" style="width: 280px; flex-shrink: 0;">
                 <div class="offcanvas-header d-md-none border-bottom border-color">
                     <h5 class="offcanvas-title dashboard-title">IP Visiteurs</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                 </div>
                 
-                <div class="p-3 d-none d-md-block border-bottom border-color">
+                <div class="p-3 d-none d-md-block border-bottom border-color" style="position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                     <h2 class="dashboard-title fs-4 m-0"><i class="fas fa-chart-network me-2"></i>Analytics</h2>
-                    <div class="small text-muted mt-1">{{ grouped_visits|length }} Visiteurs Uniques</div>
+                    <!-- Fix de la visibilité du nombre de visiteurs -->
+                    <div class="small mt-2 text-light opacity-75 fw-medium">
+                        <i class="fas fa-users me-2 text-info"></i>{{ grouped_visits|length }} Visiteurs Uniques
+                    </div>
                 </div>
 
                 <div class="list-group list-group-flush" id="ip-list">
@@ -284,7 +312,7 @@ def admin():
             </div>
 
             <!-- Contenu Principal -->
-            <div class="flex-grow-1 p-3 p-md-5" style="max-height: 100vh; overflow-y: auto;">
+            <div class="flex-grow-1 p-3 p-md-5" style="height: 100vh; overflow-y: auto;">
                 
                 <div class="container-fluid max-w-4xl">
                     
@@ -338,11 +366,12 @@ def admin():
 
                                     <div class="timeline-item {{ type_class }}">
                                         <div class="timeline-icon"></div>
-                                        <!-- Affichage de l'heure ET de la date ici -->
+                                        
                                         <span class="time-label">
                                             {{ v.timestamp.strftime('%H:%M:%S') }}
-                                            <span class="text-muted small ms-1">{{ v.timestamp.strftime('%d/%m/%Y') }}</span>
+                                            <span class="date-label">{{ v.timestamp.strftime('%d/%m/%Y') }}</span>
                                         </span>
+
                                         <span class="badge-custom {{ badge_class }}">
                                             <i class="fas {{ icon }} me-1"></i> {{ v.action|replace('_', ' ') }}
                                         </span>
