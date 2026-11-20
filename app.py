@@ -94,13 +94,13 @@ def admin():
             }
         grouped_visits[v.ip_address]['actions'].append(v)
     
-    # Template HTML (Dashboard 2-panes, Custom Scrollbar, Date et Compteur visibles)
+    # Template HTML
     html = """
     <!DOCTYPE html>
     <html lang="fr">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <title>Analytics | Portfolio</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -141,15 +141,14 @@ def admin():
                 scrollbar-width: thin;
                 scrollbar-color: #475569 var(--bg-main);
             }
-            /* --------------------------------------------- */
             
             /* Sidebar Styles */
             .sidebar {
                 background-color: var(--bg-card);
                 border-right: 1px solid var(--border-color);
                 height: 100vh;
-                overflow-y: auto;
             }
+            
             .ip-menu-item {
                 cursor: pointer;
                 padding: 12px 16px;
@@ -272,47 +271,59 @@ def admin():
             .bg-time { background-color: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
             .bg-click { background-color: rgba(251, 113, 133, 0.15); color: #fda4af; border: 1px solid rgba(251, 113, 133, 0.3); }
 
-            .offcanvas { background-color: var(--bg-card); color: var(--text-main); }
+            .offcanvas { background-color: var(--bg-card) !important; color: var(--text-main); }
             .btn-close-white { filter: invert(1) grayscale(100%) brightness(200%); }
         </style>
     </head>
     <body>
         
-        <div class="d-md-none bg-card border-bottom border-color p-3 d-flex justify-content-between align-items-center">
-            <h2 class="dashboard-title fs-4 m-0"><i class="fas fa-chart-network me-2"></i>Analytics</h2>
-            <button class="btn btn-outline-secondary text-white" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-                <i class="fas fa-bars"></i>
+        <!-- En-tête Mobile avec Compteur et Hamburger -->
+        <div class="d-md-none bg-card border-bottom border-color p-3 d-flex justify-content-between align-items-center" style="background-color: var(--bg-card); position: sticky; top: 0; z-index: 1020;">
+            <div>
+                <h2 class="dashboard-title fs-4 m-0"><i class="fas fa-chart-network me-2"></i>Analytics</h2>
+                <div class="small mt-1 text-light opacity-75 fw-medium" style="font-size: 0.8rem;">
+                    <i class="fas fa-users me-1 text-info"></i>{{ grouped_visits|length }} Visiteurs Uniques
+                </div>
+            </div>
+            <button class="btn btn-outline-secondary text-white border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                <i class="fas fa-bars fs-4"></i>
             </button>
         </div>
 
         <div class="d-flex">
-            <!-- Sidebar -->
-            <div class="offcanvas-md offcanvas-start sidebar" tabindex="-1" id="sidebarMenu" style="width: 280px; flex-shrink: 0;">
+            <!-- Sidebar (Offcanvas sur mobile) -->
+            <div class="offcanvas-md offcanvas-start sidebar" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" style="width: 280px; flex-shrink: 0;">
+                
+                <!-- En-tête de l'offcanvas (Mobile uniquement) -->
                 <div class="offcanvas-header d-md-none border-bottom border-color">
-                    <h5 class="offcanvas-title dashboard-title">IP Visiteurs</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    <h5 class="offcanvas-title dashboard-title" id="sidebarMenuLabel">Adresses IP</h5>
+                    <!-- FIX de la croix de fermeture -->
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Fermer"></button>
                 </div>
                 
+                <!-- En-tête Desktop -->
                 <div class="p-3 d-none d-md-block border-bottom border-color" style="position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                     <h2 class="dashboard-title fs-4 m-0"><i class="fas fa-chart-network me-2"></i>Analytics</h2>
-                    <!-- Fix de la visibilité du nombre de visiteurs -->
                     <div class="small mt-2 text-light opacity-75 fw-medium">
                         <i class="fas fa-users me-2 text-info"></i>{{ grouped_visits|length }} Visiteurs Uniques
                     </div>
                 </div>
 
-                <div class="list-group list-group-flush" id="ip-list">
-                    {% for ip, data in grouped_visits.items() %}
-                    <div class="ip-menu-item d-flex justify-content-between align-items-center {% if loop.first %}active{% endif %}" onclick="showIpData('{{ ip|replace('.', '-') }}', this)">
-                        <span class="text-truncate" style="max-width: 150px;">{{ ip }}</span>
-                        <span class="badge bg-secondary bg-opacity-25 rounded-pill">{{ data.actions|length }}</span>
+                <!-- FIX du Scroll Mobile : Contenu dans offcanvas-body -->
+                <div class="offcanvas-body p-0 flex-column" style="overflow-y: auto;">
+                    <div class="list-group list-group-flush w-100" id="ip-list">
+                        {% for ip, data in grouped_visits.items() %}
+                        <div class="ip-menu-item d-flex justify-content-between align-items-center {% if loop.first %}active{% endif %}" onclick="showIpData('{{ ip|replace('.', '-') }}', this)">
+                            <span class="text-truncate" style="max-width: 150px;">{{ ip }}</span>
+                            <span class="badge bg-secondary bg-opacity-25 rounded-pill">{{ data.actions|length }}</span>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
 
             <!-- Contenu Principal -->
-            <div class="flex-grow-1 p-3 p-md-5" style="height: 100vh; overflow-y: auto;">
+            <div class="flex-grow-1 p-3 p-md-5" style="height: 100vh; overflow-y: auto; background-color: var(--bg-main);">
                 
                 <div class="container-fluid max-w-4xl">
                     
@@ -413,8 +424,9 @@ def admin():
                     targetView.classList.add('active-view');
                 }
                 
-                const offcanvasElement = document.getElementById('sidebarMenu');
+                // Fermer l'offcanvas sur mobile après sélection
                 if (window.innerWidth < 768) {
+                    const offcanvasElement = document.getElementById('sidebarMenu');
                     const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
                     if (bsOffcanvas) {
                         bsOffcanvas.hide();
