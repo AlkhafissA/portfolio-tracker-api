@@ -5,7 +5,6 @@ from datetime import datetime
 import os
 from functools import wraps
 
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,7 +16,6 @@ def health_check():
 CORS(app, resources={r"/api/*": {"origins": "https://alkhafissa.github.io"}})
 
 # 2. Configuration de la base de données SQLite
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tracker.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///tracker.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -199,11 +197,12 @@ def admin():
                 border: 2px solid #64748b;
                 z-index: 2;
             }
-            /* Point de couleur spécifique selon l'action */
+            /* Points de couleurs spécifiques selon l'action */
             .timeline-item.type-cv .timeline-icon { border-color: #fbbf24; box-shadow: 0 0 8px rgba(251, 191, 36, 0.4); }
             .timeline-item.type-read .timeline-icon { border-color: #38bdf8; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
             .timeline-item.type-time .timeline-icon { border-color: #a855f7; box-shadow: 0 0 8px rgba(168, 85, 247, 0.4); }
             .timeline-item.type-page .timeline-icon { border-color: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); }
+            .timeline-item.type-click .timeline-icon { border-color: #fb7185; box-shadow: 0 0 8px rgba(251, 113, 133, 0.4); }
 
             .time-label {
                 font-size: 0.85rem;
@@ -225,6 +224,7 @@ def admin():
             .bg-page { background-color: rgba(52, 211, 153, 0.15); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.3); }
             .bg-read { background-color: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.3); }
             .bg-time { background-color: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
+            .bg-click { background-color: rgba(251, 113, 133, 0.15); color: #fda4af; border: 1px solid rgba(251, 113, 133, 0.3); }
         </style>
     </head>
     <body class="p-3 p-md-5">
@@ -273,6 +273,14 @@ def admin():
                             {% set type_class = 'type-cv' %}
                             {% set badge_class = 'bg-cv' %}
                             {% set icon = 'fa-file-pdf' %}
+                        {% elif 'click_' in v.action %}
+                            {% set type_class = 'type-click' %}
+                            {% set badge_class = 'bg-click' %}
+                            {% set icon = 'fa-arrow-up-right-from-square' %}
+                        {% elif 'hover_' in v.action %}
+                            {% set type_class = 'type-read' %}
+                            {% set badge_class = 'bg-read' %}
+                            {% set icon = 'fa-computer-mouse' %}
                         {% elif 'lu_' in v.action %}
                             {% set type_class = 'type-read' %}
                             {% set badge_class = 'bg-read' %}
